@@ -26,10 +26,10 @@ if __name__ == "__main__":
     parser.add_option("--man",
                       action = 'store_true',
                       help = "show the manual for this program")
-    parser.add_option("-V","--verbose",
+    parser.add_option("-v","--verbose",
                       action = 'store_true',
                       help = "be verbose in all things, go with god")
-    parser.add_option("-v","--version",
+    parser.add_option("-V","--version",
                       action = 'store_true',
                       help = "show version")
     parser.add_option("--int",
