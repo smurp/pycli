@@ -1,5 +1,5 @@
 #!/usr/bin/python
-__version__='1.0.1'
+__version__='1.0.2'
 __doc__ = """
 pycli.py is python boilerplate code written by
 Shawn Murphy<smurp@smurp.com> to act as a starting point for his
@@ -7,6 +7,8 @@ command-line programs.  It offers basic features such as:
   - doctest testing
   - automatic manual creation
   - version inspection
+See it on github at:
+  http://github.com/smurp/pycli/
 """
 
 def dummy_meth(a):
