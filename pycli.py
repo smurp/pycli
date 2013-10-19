@@ -1,5 +1,5 @@
-#!/usr/bin/python
-__version__='1.0.2'
+#!/usr/bin/env python
+__version__='1.0.3'
 __doc__ = """
 pycli.py is python boilerplate code written by
 Shawn Murphy<smurp@smurp.com> to act as a starting point for his
