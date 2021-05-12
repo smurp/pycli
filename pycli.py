@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 __version__='1.0.3'
 __doc__ = """
 pycli.py is python boilerplate code written by
@@ -15,11 +15,11 @@ def dummy_meth(a):
     """
     >>> dummy_meth('a')
     'a'
-    
+
     """
     return a
 
-if __name__ == "__main__":        
+if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("--doctest",
@@ -54,9 +54,9 @@ if __name__ == "__main__":
     if options.version:
         show_usage = False
         if options.verbose:
-            print __cvs_id__
+            print( __cvs_id__)
         else:
-            print parser.version
+            print( parser.version)
     if options.man:
         show_usage = False
         import pydoc
