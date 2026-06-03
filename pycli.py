@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-__version__='1.1.0'
+# Version scheme: SemVer + build-date metadata  ->  MAJOR.MINOR.PATCH+YYYYMMDD  (KEEP BOTH CURRENT)
+__version__='1.1.1+20260603'
 __doc__ = """
 pycli.py is python boilerplate code written by
 Shawn Murphy<smurp@smurp.com> to act as a starting point for his
