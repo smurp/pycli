@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-__version__='1.0.3'
+__version__='1.1.0'
 __doc__ = """
 pycli.py is python boilerplate code written by
 Shawn Murphy<smurp@smurp.com> to act as a starting point for his
@@ -7,9 +7,18 @@ command-line programs.  It offers basic features such as:
   - doctest testing
   - automatic manual creation
   - version inspection
-See it on github at:
-  http://github.com/smurp/pycli/
+  - optional install/uninstall/update/status (drop in selfinstall.py)
+Home:
+  https://git.smurp.com/smurp/pycli
 """
+
+import os, sys
+# Optional self-install lifecycle: `<prog> install|uninstall|update|status`. selfinstall.py ships
+# with pycli; copy it alongside a fork to enable (delete these lines for a pure-pycli fork). The
+# sys.path line lets `import selfinstall` resolve even when run via the program's PATH symlink.
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+try: import selfinstall
+except ImportError: selfinstall = None
 
 def dummy_meth(a):
     """
@@ -20,6 +29,9 @@ def dummy_meth(a):
     return a
 
 if __name__ == "__main__":
+    if selfinstall:                                    # <prog> install|uninstall|update|status
+        _rc = selfinstall.maybe(sys.argv, __file__, __version__)
+        if _rc is not None: sys.exit(_rc)
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("--doctest",
