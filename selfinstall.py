@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Version scheme: SemVer + build-date  ->  MAJOR.MINOR.PATCH+YYYYMMDD  (KEEP BOTH CURRENT)
-__version__ = "0.1.0+20260603"
+__version__ = "0.2.0+20260604"
 """selfinstall — drop-in install/update lifecycle for pycli-style single-file tools.
 
 Ships with pycli; COPY it next to any single-file tool (it stays self-contained / auditable) and
@@ -32,6 +32,7 @@ import os, shutil, subprocess, sys
 
 COMMANDS = ("install", "uninstall", "update", "status")
 DEFAULT_BINDIR = "~/.local/bin"
+DISPATCH_PREFIX = "boydstrap"   # tools also install as `<prefix>-<name>` so the `boydstrap` dispatcher finds them (git-plugin style)
 
 # ---------- pure helpers (doctested: `python3 -m doctest selfinstall.py -v`) ----------
 def parse_opts(rest, default_bindir):
@@ -66,6 +67,22 @@ def dir_on_path(d, pathenv):
     d = os.path.normpath(os.path.expanduser(d))
     return any(os.path.normpath(p) == d for p in pathenv.split(os.pathsep) if p)
 
+def linknames(name, prefix=DISPATCH_PREFIX):
+    """Command names a tool installs as: its own name, plus `<prefix>-<name>` so the
+    dispatcher can find it. The dispatcher itself (name == prefix, or already prefixed)
+    installs under just its own name.
+
+    >>> linknames("secretkeeper", "boydstrap")
+    ['secretkeeper', 'boydstrap-secretkeeper']
+    >>> linknames("boydstrap", "boydstrap")
+    ['boydstrap']
+    >>> linknames("boydstrap-backinator", "boydstrap")
+    ['boydstrap-backinator']
+    """
+    if name == prefix or name.startswith(prefix + "-"):
+        return [name]
+    return [name, prefix + "-" + name]
+
 # ---------- side-effecting ----------
 def _real(p): return os.path.realpath(os.path.expanduser(p))
 def _repo(prog_file): return os.path.dirname(_real(prog_file))
@@ -82,30 +99,38 @@ def maybe(argv, prog_file, version=""):
 
 def _install(prog_file, version, bindir, dry, verbose):
     target = _real(prog_file); name = os.path.basename(target)
-    bd = os.path.expanduser(bindir); link = os.path.join(bd, name)
-    if os.path.exists(link) and not os.path.islink(link):
-        print(f"  refuse: {link} exists and is not a symlink"); return 1
-    print(f"  install: {link} -> {target}")
-    if not dry:
-        os.makedirs(bd, exist_ok=True)
-        if os.path.islink(link) or os.path.exists(link): os.remove(link)
-        os.symlink(target, link)
+    bd = os.path.expanduser(bindir); names = linknames(name); rc = 0
+    if not dry: os.makedirs(bd, exist_ok=True)
+    for ln in names:
+        link = os.path.join(bd, ln)
+        if os.path.exists(link) and not os.path.islink(link):
+            print(f"  refuse: {link} exists and is not a symlink"); rc = 1; continue
+        print(f"  install: {link} -> {target}")
+        if not dry:
+            if os.path.islink(link) or os.path.exists(link): os.remove(link)
+            os.symlink(target, link)
     if dir_on_path(bd, os.environ.get("PATH", "")):
         print(f"  ✓ {bd} is on PATH — run: {name}")
+        if names != [name]:
+            print(f"    (also reachable as `{DISPATCH_PREFIX} {name}` via the dispatcher)")
     else:
         print(f"  ⚠ {bd} is NOT on your PATH. Add it, e.g.:")
         print(f"      echo 'export PATH=\"{bindir}:$PATH\"' >> ~/.profile   # then re-login")
         print(f"    (Ubuntu's ~/.profile auto-adds ~/.local/bin and ~/bin at login if they exist.)")
-    return 0
+    return rc
 
 def _uninstall(prog_file, version, bindir, dry, verbose):
-    target = _real(prog_file); name = os.path.basename(target)
-    link = os.path.join(os.path.expanduser(bindir), name)
-    if os.path.islink(link) and _real(link) == target:
-        print(f"  uninstall: rm {link}")
-        if not dry: os.remove(link)
-        return 0
-    print(f"  not installed at {link} (or not this tool's symlink)"); return 1
+    target = _real(prog_file); name = os.path.basename(target); bd = os.path.expanduser(bindir)
+    removed = 0
+    for ln in linknames(name):
+        link = os.path.join(bd, ln)
+        if os.path.islink(link) and _real(link) == target:
+            print(f"  uninstall: rm {link}")
+            if not dry: os.remove(link)
+            removed += 1
+    if not removed:
+        print(f"  not installed in {bd} (or not this tool's symlinks)"); return 1
+    return 0
 
 def _update(prog_file, version, bindir, dry, verbose):
     repo = _repo(prog_file)
@@ -132,6 +157,9 @@ def _status(prog_file, version, bindir, dry, verbose):
         print(f"    on PATH: {found}" + ("  (this checkout)" if same else f"  (-> {_real(found)})"))
     else:
         print(f"    on PATH: no  (run `{name} install`)")
+    extra = [n for n in linknames(name) if n != name]
+    if extra:
+        print(f"    dispatch: `{DISPATCH_PREFIX} {name}`" + ("" if shutil.which(extra[0]) else "  (alias not linked — run `install`)"))
     if os.path.isdir(os.path.join(repo, ".git")):
         _git(repo, "fetch", "--quiet")  # best-effort; ignore failure (offline)
         br = _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
